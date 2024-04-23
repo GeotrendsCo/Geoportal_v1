@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Incluir Bootstrap CSS  https://getbootstrap.com/docs/5.3/getting-started/introduction/-->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+        integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"
+        integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy"
+        crossorigin="anonymous"></script>
+
+    <!-- Incluir Leaflet CSS y JS https://leafletjs.com/examples/quick-start/ -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <!-- Make sure you put this AFTER Leaflet's CSS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- Incluir Turf.js -->
+    <script src='https://unpkg.com/@turf/turf@6/turf.min.js'></script>
+
+    <!-- Incluir Chart.js https://www.chartjs.org/docs/latest/getting-started/-->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!--Paso11  -->
+
+    <!-- Incluir CSS del Minimap -->
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-minimap/3.6.1/Control.MiniMap.min.css" />
+
+    <!-- Incluir JS del Minimap -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-minimap/3.6.1/Control.MiniMap.min.js"></script>
+
+    <!-- paso 12 -->
+    <!-- Incluir geocoder -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+
+
+    <title>Mi Geoportal</title>
+</head>
+
+<body>
+    <!-- Botón para ubicación -->
+    <button id="locate-me">Marcar mi Ubicación</button>
+
+    <!-- para crear mapas -->
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-8">
+                <div id="map" style="height: 500px;"></div>
+            </div>
+            <div class="col-md-4">
+                <h3>Información de Datos</h3>
+                <canvas id="dataChart"></canvas>
+
+                <!-- incluir resultados -->
+                <div id="infoPanel"
+                    style="position: absolute; bottom: 10px; left: 10px; background: white; padding: 10px;">
+                    <h4>Resultados de Análisis</h4>
+                    <p id="analysisResult">Aquí aparecerán los resultados...</p>
+                </div>
+
+                <!-- paso 15 Nuevo chart -->
+                <canvas id="myChart" width="400" height="400"></canvas>
+            </div>
+        </div>
+    </div>
+    <!-- -->
+
+
+
+
+    <script>
+        //Inicialización del mapa
+        var map = L.map('map').setView([6.2447472222222, -75.574827777778], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Inicialización de Chart.js
+        var ctx = document.getElementById('dataChart').getContext('2d');
+        var chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Ejemplo 1', 'Ejemplo 2', 'Ejemplo 3'],
+                datasets: [{
+                    label: 'Datos de prueba',
+                    data: [10, 20, 30],
+                    backgroundColor: ['red', 'blue', 'green']
+                }]
+            },
+            options: {}
+        });
+
+        // paso 15
+        var ctx = document.getElementById('myChart').getContext('2d');
+        var myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Rojo', 'Azul', 'Amarillo', 'Verde', 'Púrpura', 'Naranja'],
+                datasets: [{
+                    label: 'Número de votos',
+                    data: [12, 19, 3, 5, 2, 3],
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.2)',
+                        'rgba(54, 162, 235, 0.2)',
+                        'rgba(255, 206, 86, 0.2)',
+                        'rgba(75, 192, 192, 0.2)',
+                        'rgba(153, 102, 255, 0.2)',
+                        'rgba(255, 159, 64, 0.2)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        function updateChartData(chart, newData) {
+            chart.data.datasets[0].data = newData;
+            chart.update();
+        }
+
+        // Supón que obtienes nuevos datos de alguna parte
+        var newData = [20, 15, 10, 10, 6, 4];
+        updateChartData(myChart, newData);
+
+
+        //Paso 7
+        // configurar marcadores
+        var markerExplora = L.marker([6.27053, -75.56580]).addTo(map);
+        markerExplora.bindPopup('<b>Parque Explora</b><br>Un lugar de ciencia y tecnología.');
+
+        var markerPueblito = L.marker([6.23425, -75.57483]).addTo(map);
+        markerPueblito.bindPopup('<b>Pueblito Paisa</b><br>Replica de un pueblo tradicional antioqueño.');
+
+        //eventos en el mapa 
+        map.on('click', function (e) {
+            console.log("Has clickeado en: " + e.latlng.toString());
+        });
+
+        //agregar capas de datos
+        var geojsonData = {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "name": "Museo de Antioquia",
+                        "description": "Uno de los museos más importantes de Colombia, con extensas colecciones de arte moderno y contemporáneo."
+                    },
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [-75.568897, 6.252998]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "name": "Plaza Botero",
+                        "description": "Una plaza famosa por las esculturas de Fernando Botero, un renombrado artista colombiano."
+                    },
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [-75.568954, 6.25389]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "name": "Parque Arví",
+                        "description": "Un extenso parque ecológico que ofrece senderos para caminatas, picnic y teleférico con vistas panorámicas."
+                    },
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [-75.511332, 6.33285]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "name": "Metrocable Medellín",
+                        "description": "El sistema de cable aéreo integrado al Metro de Medellín, proporciona acceso a las zonas altas y ofrece vistas impresionantes de la ciudad."
+                    },
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [-75.569923, 6.292278]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "name": "Parque de los Pies Descalzos",
+                        "description": "Un espacio zen en el centro de la ciudad diseñado para disfrutar descalzo, con fuentes de agua y jardines de arena."
+                    },
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [-75.569291, 6.244157]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "name": "Estadio Atanasio Girardot",
+                        "description": "El principal estadio deportivo de Medellín, hogar de los equipos de fútbol Atlético Nacional y Independiente Medellín."
+                    },
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [-75.590549, 6.256686]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "name": "Jardín Botánico de Medellín",
+                        "description": "Un jardín botánico con una gran variedad de flora colombiana, ideal para los amantes de la naturaleza y familias."
+                    },
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [-75.56982, 6.26667]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "name": "Castillo Museo y Jardines",
+                        "description": "Un castillo de estilo gótico medieval que alberga un museo de arte y unos jardines magníficos."
+                    },
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [-75.565723, 6.211730]
+                    }
+                }
+            ]
+        };
+
+
+        //Comentar o descomentar ctrl+k+c o ctrl+k+u
+        // L.geoJSON(geojsonData, {
+        //     onEachFeature: function (feature, layer) {
+        //         if (feature.properties && feature.properties.name) {
+        //             layer.bindPopup('<strong>' + feature.properties.name + '</strong><br>' + feature.properties.description);
+        //         }
+        //     }
+        // }).addTo(map);;
+
+        //Paso 8
+        var from = turf.point([-104.99404, 39.75621]);
+        var to = turf.point([40.416775, -3.703790]);
+        var options = { units: 'miles' };
+
+        var distance = turf.distance(from, to, options);
+        console.log("La distancia es: " + distance.toFixed(2) + " millas.");
+
+        //Paso 9
+
+
+        //mapas base (https://leaflet-extras.github.io/leaflet-providers/preview/) (https://openwhatevermap.xyz/#6/5.824/-431.818)
+        
+        // Define el mapa y las capas base se realiza modificación de cargue de capas
+        // Paso 21
+        var osmBase = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        var Esri_WorldImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+        });
+
+        var Stadia_StamenToner = L.tileLayer('https://tiles.stadiamaps.com/tiles/stamen_toner/{z}/{x}/{y}{r}.{ext}', {
+            attribution: '&copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a>, <a href="https://www.stamen.com/" target="_blank">Stamen Design</a>, <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> & <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            ext: 'png'
+        });
+
+
+        var geojsonLayer = L.geoJSON(geojsonData, {
+            onEachFeature: function (feature, layer) {
+                layer.bindPopup('<strong>' + feature.properties.name + '</strong><br>' + feature.properties.description);
+            }
+        });
+
+        var baseMaps = {
+            "OpenStreetMap": osmBase,
+            "Esri Satelital": Esri_WorldImagery,
+            "Stadia_StamenToner": Stadia_StamenToner
+        };
+
+        var overlayMaps = {
+            "Puntos de Interés": geojsonLayer // Capa estática
+        };
+
+        var controlCapas = L.control.layers(baseMaps, overlayMaps).addTo(map);
+
+
+        // Carga dinámica de capas desde el servidor
+        fetch('/api/capas')
+            .then(response => response.json())
+            .then(capas => {
+                capas.forEach(capa => {
+                    fetch(`/api/datos/${capa}`)
+                        .then(response => response.json())
+                        .then(datos => {
+                            var geojsonLayerDinamica = L.geoJSON(datos, {
+                                onEachFeature: function (feature, layer) {
+                                    layer.bindPopup(feature.properties.name);  // Asegúrate de que cada característica tenga una propiedad 'name'
+                                }
+                            });
+
+                            // Añade la capa cargada dinámicamente al control de capas
+                            controlCapas.addOverlay(geojsonLayerDinamica, capa);
+                        });
+                });
+            })
+            .catch(error => console.error('Error al cargar capas:', error));
+
+
+
+        //nuevamente turf
+        map.on('click', function (e) {
+            // Supongamos que quieres calcular la distancia desde este punto a Parque Explora
+            var pointClicked = turf.point([e.latlng.lng, e.latlng.lat]);
+            var pointExplora = turf.point([-75.56580, 6.27053]);
+            var options = { units: 'kilometers' };
+
+            var distance = turf.distance(pointClicked, pointExplora, options);
+            document.getElementById('analysisResult').innerHTML = "Distancia al Parque Explora: " + distance.toFixed(2) + " km";
+        });
+
+        //Paso 11
+        var minimapLayer = new L.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            minZoom: 0,
+            maxZoom: 13
+        });
+
+        var minimap = new L.Control.MiniMap(minimapLayer, {
+            toggleDisplay: true, // Permite minimizar el minimap
+            minimized: false, // Inicia no minimizado
+            position: 'bottomright' // Posición del minimap en el mapa principal
+        }).addTo(map);
+
+        //Paso 12
+        var geocoder = L.Control.geocoder({
+            defaultMarkGeocode: false
+        }).on('markgeocode', function (e) {
+            var bbox = e.geocode.bbox;
+            var poly = L.polygon([
+                bbox.getSouthEast(),
+                bbox.getNorthEast(),
+                bbox.getNorthWest(),
+                bbox.getSouthWest()
+            ]).addTo(map);
+            map.fitBounds(poly.getBounds());
+        }).addTo(map);
+
+
+        //Paso13
+        document.getElementById('locate-me').addEventListener('click', function () {
+            map.locate({ setView: true, maxZoom: 16 });
+
+            function onLocationFound(e) {
+                var radius = e.accuracy / 2;
+
+                // Limpia los marcadores anteriores
+                map.eachLayer(function (layer) {
+                    if (layer instanceof L.Marker) {
+                        map.removeLayer(layer);
+                    }
+                });
+
+                L.marker(e.latlng).addTo(map)
+                    .bindPopup("Estás aproximadamente aquí, con una precisión de +/- " + radius + " metros").openPopup();
+            }
+
+            map.on('locationfound', onLocationFound);
+
+            function onLocationError(e) {
+                alert("Error al obtener la ubicación: " + e.message);
+            }
+
+            map.on('locationerror', onLocationError);
+        });
+
+        //
+        // Crear un control personalizado para la ubicación
+        var locateControl = L.control({ position: 'topleft' });
+
+        locateControl.onAdd = function (map) {
+            var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+
+            container.style.backgroundColor = 'white';
+            container.style.backgroundImage = "url('icons/location-icon.png')"; // Añade tu propio ícono aquí
+            container.style.backgroundSize = "30px 30px";
+            container.style.width = '34px';
+            container.style.height = '34px';
+
+            container.onclick = function () {
+                map.locate({ setView: true, maxZoom: 16 });
+            }
+
+            return container;
+        };
+
+        locateControl.addTo(map);
+
+        //Paso14
+
+        var line = turf.lineString([[-75.56580, 6.27053], [-75.56580, 6.28053]]);
+        var curved = turf.bezierSpline(line);
+        L.geoJSON(curved).addTo(map);
+
+        //Paso16
+        var geojsonFeatures = [
+            {
+                "type": "Feature",
+                "properties": {
+                    "name": "Ciudad A",
+                    "population": 50000,
+                    "age_average": 36
+                },
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [-75.343, 39.984]
+                }
+            },
+            // Más ciudades/áreas...
+        ];
+        L.geoJSON(geojsonFeatures, {
+            onEachFeature: function (feature, layer) {
+                layer.on('click', function () {
+                    updateChartData(myChart, [feature.properties.population, feature.properties.age_average]);
+                });
+            }
+        }).addTo(map);
+
+        // Con ciudades de colombia 
+
+        var ciudades = [
+            { name: "Bogotá", coords: [4.7110, -74.0721], population: 7878787 },
+            { name: "Medellín", coords: [6.2442, -75.5812], population: 2464280 },
+            { name: "Cali", coords: [3.4516, -76.5320], population: 2228000 },
+            { name: "Barranquilla", coords: [10.9685, -74.7813], population: 1206000 },
+            { name: "Cartagena", coords: [10.3932, -75.4832], population: 914552 },
+            { name: "Cúcuta", coords: [7.8891, -72.4968], population: 711715 },
+            { name: "Bucaramanga", coords: [7.1193, -73.1198], population: 528610 },
+            { name: "Pereira", coords: [4.8087, -75.6906], population: 468511 },
+            { name: "Santa Marta", coords: [11.2408, -74.1990], population: 454299 },
+            { name: "Ibagué", coords: [4.4389, -75.2322], population: 421685 }
+        ];
+
+        var iconColors = ["red", "blue", "green", "purple", "orange", "yellow", "pink", "gray", "brown", "black"];
+
+        function createIcon(color) {
+            return L.icon({
+                iconUrl: `icon/icon-${color}.png`, // Asegúrate de tener iconos de estos colores
+                iconSize: [25, 41], // Tamaño estándar de iconos de Leaflet
+                iconAnchor: [12, 41], // Ajusta según necesites
+                popupAnchor: [1, -34] // Ajusta según necesites
+            });
+        }
+
+        // Añadir marcadores al mapa
+        ciudades.forEach((ciudad, index) => {
+            L.marker(ciudad.coords, { icon: createIcon(iconColors[index % iconColors.length]) })
+                .addTo(map)
+                .bindPopup(`<b>${ciudad.name}</b><br>Población: ${ciudad.population}`)
+                .on('click', function () {
+                    updateChartData(myChart, [ciudad.population]);
+                });
+        });
+
+        // Configuración de Chart.js
+        var ctx = document.getElementById('myChart').getContext('2d');
+        var myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Población'],
+                datasets: [{
+                    label: 'Datos Demográficos',
+                    data: [],
+                    backgroundColor: ['rgba(255, 99, 132, 0.2)'],
+                    borderColor: ['rgba(255, 99, 132, 1)'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        // Función para actualizar el gráfico
+        function updateChartData(chart, newData) {
+            chart.data.datasets[0].data = newData;
+            chart.update();
+        }
+
+        //paso 17
+        var selectedCities = {};
+
+        // Función para actualizar la selección
+        function toggleCitySelection(ciudad, marker) {
+            if (selectedCities[ciudad.name]) {
+                delete selectedCities[ciudad.name];
+                marker.setIcon(createIcon('default')); // Cambiar a un color estándar cuando no está seleccionado
+            } else {
+                selectedCities[ciudad.name] = ciudad;
+                marker.setIcon(createIcon('selected')); // Cambiar a un color seleccionado
+            }
+            updateChartWithData(Object.values(selectedCities));
+        }
+
+        function updateChartWithData(selectedCities) {
+            myChart.data.labels = selectedCities.map(city => city.name);
+            myChart.data.datasets[0].data = selectedCities.map(city => city.population);
+            myChart.update();
+        }
+
+        ciudades.forEach((ciudad, index) => {
+            var marker = L.marker(ciudad.coords, { icon: createIcon('default') })  // Icono por defecto
+                .addTo(map)
+                .bindPopup(`<b>${ciudad.name}</b><br>Población: ${ciudad.population}`);
+
+            // Añadir evento de clic al marcador
+            marker.on('click', function () {
+                toggleCitySelection(ciudad, marker);
+            });
+        });
+
+        function createIcon(color) {
+            return L.icon({
+                iconUrl: `icon/icon-${color}.png`,  // Asegúrate de que los iconos existan
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34]
+            });
+        }
+
+
+    </script>
+
+</body>
+
+</html>
