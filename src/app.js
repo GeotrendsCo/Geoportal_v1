@@ -86,5 +86,5 @@ function transformToGeoJSON(rows) {
 
 // Iniciar el servidor
 app.listen(PORT, () => {
-    console.log(`Servidor corriendo en http://localhost:${PORT}`);
+    console.log(`Servidor corriendo en http://44.213.153.17:${PORT}`);
 });
