@@ -45,6 +45,9 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
+    <!-- Para dibujar Poligono-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 
 
     <title>Mi Geoportal</title>
@@ -103,6 +106,86 @@
             },
             options: {}
         });
+        //Paso 30 dibujar
+// Paso 30: Configuración de Dibujo en el Mapa
+var drawnItems = new L.FeatureGroup();
+map.addLayer(drawnItems);
+
+var drawControl = new L.Control.Draw({
+    draw: {
+        polygon: true,
+        polyline: false,
+        rectangle: false,
+        circle: false,
+        marker: false
+    },
+    edit: {
+        featureGroup: drawnItems
+    }
+});
+map.addControl(drawControl);
+
+// Manejador para la creación de polígonos
+map.on(L.Draw.Event.CREATED, function (event) {
+    var layer = event.layer;
+    drawnItems.addLayer(layer);
+
+    var nombrePoligono = prompt("Por favor, ingresa un nombre para el polígono:", "Nombre del Polígono");
+    if (nombrePoligono) {
+        enviarDatosAlServidor(nombrePoligono, layer.toGeoJSON().geometry, function (data) {
+            if (data && data.id) {
+                layer._leaflet_id = data.id; // Asignar ID a la capa para futuras referencias
+                console.log('ID asignado al polígono:', layer._leaflet_id);
+            }
+        });
+    }
+});
+
+// Función para enviar datos al servidor
+function enviarDatosAlServidor(nombre, geom, callback) {
+    fetch('/guardar_poligono', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            nombre: nombre,
+            geom: JSON.stringify(geom) // Convertir la geometría a string
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Polígono guardado con éxito:', data);
+        if (callback) callback(data);
+    })
+    .catch(error => console.error('Error al guardar el polígono:', error));
+}
+
+// Manejador para cuando se editan polígonos
+map.on(L.Draw.Event.EDITED, function (event) {
+    var layers = event.layers;
+    layers.eachLayer(function (layer) {
+        if (!layer._leaflet_id) {
+            console.error('ID ## del polígono no encontrado, no se puede actualizar.');
+            return;
+        }
+
+        var geom = layer.toGeoJSON().geometry;
+        fetch(`/actualizar_poligono/${layer._leaflet_id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                geom: JSON.stringify(geom)
+            })
+        })
+        .then(response => response.json())
+        .then(data => console.log('Polígono actualizado con éxito:', data))
+        .catch(error => console.error('Error al actualizar el polígono:', error));
+    });
+});
+
 
         // paso 15
         var ctx = document.getElementById('myChart').getContext('2d');
