@@ -24,6 +24,42 @@ app.post('/api/datos', (req, res) => {
     res.status(201).send({ mensaje: "Datos guardados en la base de datos" });
 });
 //
+// Middleware para parsear JSON. Esto debe estar antes de las rutas que lo necesitan.
+app.use(express.json());
+
+app.post('/guardar_poligono', async (req, res) => {
+    const { nombre, geom } = req.body;
+    const query = 'INSERT INTO poligonos (nombre, geom) VALUES ($1, ST_GeomFromGeoJSON($2)) RETURNING id;';
+    try {
+        const result = await pool.query(query, [nombre, geom]);
+        const newId = result.rows[0].id;  // Asegúrate de que la base de datos está configurada para devolver el id
+        res.json({ message: 'Polígono guardado', id: newId });
+    } catch (error) {
+        console.error('Error al guardar el polígono:', error);
+        res.status(400).json({ error: error.message });
+    }
+});
+
+
+app.put('/actualizar_poligono/:id', async (req, res) => {
+    const { id } = req.params;
+    const { geom } = req.body;
+
+    const updateQuery = 'UPDATE poligonos SET geom = ST_GeomFromGeoJSON($1) WHERE id = $2 RETURNING *;';
+    try {
+        const result = await pool.query(updateQuery, [geom, id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Polígono no encontrado.' });
+        }
+        res.json({ message: 'Polígono actualizado con éxito' });
+    } catch (error) {
+        console.error('Error al actualizar el polígono:', error);
+        res.status(500).json({ error: 'Error al actualizar el polígono' });
+    }
+});
+
+
+
 
 //paso 19
 const { Pool } = require('pg');
